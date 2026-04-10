@@ -22,7 +22,7 @@ DEFAULT_TABLE_B = "olist_order_items"
 DEFAULT_MODEL = "Qwen/Qwen3.5-397B-A17B-fast"
 FALLBACK_MODEL = "Qwen/Qwen3.5-397B-A17B-fast"
 
-LOGGER = logging.getLogger("join_advisor_debug")
+LOGGER = logging.getLogger("join_advisor")
 
 
 @dataclass
@@ -467,7 +467,7 @@ def print_summary(analysis: dict[str, Any], llm_result: dict[str, str], db_path:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Debug-heavy join advisor for SQLite tables.")
+    parser = argparse.ArgumentParser(description="Join advisor for SQLite tables.")
     parser.add_argument("--db-path", default=DEFAULT_DB_PATH, help="Path to the SQLite database file.")
     parser.add_argument("--table-a", default=DEFAULT_TABLE_A, help="Left table for join analysis.")
     parser.add_argument("--table-b", default=DEFAULT_TABLE_B, help="Right table for join analysis.")
@@ -518,13 +518,13 @@ def main() -> int:
     args = parse_args()
 
     try:
-        LOGGER.info("Starting join advisor debug run")
+        LOGGER.info("Starting join advisor run")
         result = run_join_analysis(args.db_path, args.table_a, args.table_b, args.model)
         print_summary(result["analysis"], result["llm_result"], Path(result["db_path"]))
-        LOGGER.info("Join advisor debug run finished successfully")
+        LOGGER.info("Join advisor run finished successfully")
         return 0
     except Exception as exc:
-        LOGGER.exception("ERROR: join_advisor_debug failed with an unhandled exception")
+        LOGGER.exception("ERROR: join_advisor failed with an unhandled exception")
         print("\n=== ERROR ===")
         print(f"Unhandled error: {exc}")
         print("Full stack trace:")

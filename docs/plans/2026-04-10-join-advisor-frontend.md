@@ -1,4 +1,4 @@
-# Join Advisor Debug Frontend Implementation Plan
+# Join Advisor Frontend Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
@@ -13,8 +13,8 @@
 ### Task 1: Add a shared analysis entrypoint
 
 **Files:**
-- Modify: `join_advisor_debug/main.py`
-- Test: `join_advisor_debug/tests/test_main.py`
+- Modify: `join_advisor/main.py`
+- Test: `join_advisor/tests/test_main.py`
 
 **Step 1: Write the failing test**
 
@@ -22,7 +22,7 @@ Add a test that exercises a reusable function for running analysis without print
 
 **Step 2: Run test to verify it fails**
 
-Run: `pytest /Users/adnan/Documents/join_advisor_debug/tests/test_main.py -v`
+Run: `pytest /Users/adnan/Documents/join_advisor/tests/test_main.py -v`
 Expected: FAIL because the reusable entrypoint does not exist yet.
 
 **Step 3: Write minimal implementation**
@@ -31,15 +31,15 @@ Extract the CLI’s main analysis flow into a shared function that returns struc
 
 **Step 4: Run test to verify it passes**
 
-Run: `pytest /Users/adnan/Documents/join_advisor_debug/tests/test_main.py -v`
+Run: `pytest /Users/adnan/Documents/join_advisor/tests/test_main.py -v`
 Expected: PASS.
 
 ### Task 2: Add Flask backend routes
 
 **Files:**
-- Create: `join_advisor_debug/app.py`
-- Modify: `join_advisor_debug/requirements.txt`
-- Test: `join_advisor_debug/tests/test_app.py`
+- Create: `join_advisor/app.py`
+- Modify: `join_advisor/requirements.txt`
+- Test: `join_advisor/tests/test_app.py`
 
 **Step 1: Write the failing test**
 
@@ -47,7 +47,7 @@ Add Flask test client coverage for `GET /` and `POST /analyze`.
 
 **Step 2: Run test to verify it fails**
 
-Run: `pytest /Users/adnan/Documents/join_advisor_debug/tests/test_app.py -v`
+Run: `pytest /Users/adnan/Documents/join_advisor/tests/test_app.py -v`
 Expected: FAIL because the Flask app does not exist yet.
 
 **Step 3: Write minimal implementation**
@@ -56,14 +56,14 @@ Create the Flask app, homepage route, JSON analysis endpoint, and error handling
 
 **Step 4: Run test to verify it passes**
 
-Run: `pytest /Users/adnan/Documents/join_advisor_debug/tests/test_app.py -v`
+Run: `pytest /Users/adnan/Documents/join_advisor/tests/test_app.py -v`
 Expected: PASS.
 
 ### Task 3: Build the demo UI
 
 **Files:**
-- Create: `join_advisor_debug/templates/index.html`
-- Create: `join_advisor_debug/static/styles.css`
+- Create: `join_advisor/templates/index.html`
+- Create: `join_advisor/static/styles.css`
 
 **Step 1: Write the UI**
 
@@ -71,21 +71,21 @@ Create a single-page form with inputs for DB path, tables, and model, plus secti
 
 **Step 2: Verify manually**
 
-Run: `python3 /Users/adnan/Documents/join_advisor_debug/app.py`
+Run: `python3 /Users/adnan/Documents/join_advisor/app.py`
 Expected: Browser UI loads and can submit analysis without page reload.
 
 ### Task 4: Verify the full demo path
 
 **Files:**
-- Modify: `join_advisor_debug/.env.example`
+- Modify: `join_advisor/.env.example`
 
 **Step 1: Run verification**
 
-Run: `pytest /Users/adnan/Documents/join_advisor_debug/tests/test_main.py /Users/adnan/Documents/join_advisor_debug/tests/test_app.py -v`
+Run: `pytest /Users/adnan/Documents/join_advisor/tests/test_main.py /Users/adnan/Documents/join_advisor/tests/test_app.py -v`
 Expected: all tests pass.
 
-Run: `python3 /Users/adnan/Documents/join_advisor_debug/main.py`
+Run: `python3 /Users/adnan/Documents/join_advisor/main.py`
 Expected: CLI still works.
 
-Run: `python3 /Users/adnan/Documents/join_advisor_debug/app.py`
+Run: `python3 /Users/adnan/Documents/join_advisor/app.py`
 Expected: Flask server starts cleanly for demo use.

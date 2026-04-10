@@ -47,6 +47,7 @@ def test_index_route_renders_ui():
 
     assert response.status_code == 200
     assert b"Join Advisor" in response.data
+    assert b"SQLite Join Analysis" in response.data
     assert b"Run Analysis" in response.data
 
 
