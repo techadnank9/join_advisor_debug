@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Join Advisor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero">
+        <p class="eyebrow">SQLite Join Analysis</p>
+        <h1>Join Advisor</h1>
+        <p class="subtitle">
+          Inspect join keys, match quality, duplicate risk, generated SQL, and Nebius reasoning from one page.
+        </p>
+      </section>
+
+      <section class="panel form-panel">
+        <form id="analysis-form">
+          <div class="field-grid">
+            <label>
+              <span>Database Path</span>
+              <input name="db_path" value="{{ default_db_path }}" required>
+            </label>
+            <label>
+              <span>Table A</span>
+              <input name="table_a" value="{{ default_table_a }}" required>
+            </label>
+            <label>
+              <span>Table B</span>
+              <input name="table_b" value="{{ default_table_b }}" required>
+            </label>
+            <label>
+              <span>Nebius Model</span>
+              <input name="model" value="{{ default_model }}" required>
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit">Run Analysis</button>
+            <p id="status-text">Ready to analyze.</p>
+          </div>
+        </form>
+      </section>
+
+      <section id="error-panel" class="panel hidden error-panel">
+        <h2>Request Error</h2>
+        <pre id="error-output"></pre>
+      </section>
+
+      <section id="results-panel" class="results hidden">
+        <div class="result-grid">
+          <article class="panel stat-card">
+            <h2>Best Key</h2>
+            <p id="best-key" class="metric">-</p>
+          </article>
+          <article class="panel stat-card">
+            <h2>Left Match Rate</h2>
+            <p id="left-rate" class="metric">-</p>
+          </article>
+          <article class="panel stat-card">
+            <h2>Right Match Rate</h2>
+            <p id="right-rate" class="metric">-</p>
+          </article>
+          <article class="panel stat-card">
+            <h2>Matched Distinct</h2>
+            <p id="matched-distinct" class="metric">-</p>
+          </article>
+        </div>
+
+        <div class="result-grid stack">
+          <article class="panel">
+            <h2>Overview</h2>
+            <dl class="summary-list">
+              <div><dt>Database File</dt><dd id="db-path"></dd></div>
+              <div><dt>Tables</dt><dd id="tables-analyzed"></dd></div>
+              <div><dt>Candidate Keys</dt><dd id="candidate-keys"></dd></div>
+              <div><dt>Intermediate Counts</dt><dd id="intermediate-counts"></dd></div>
+            </dl>
+          </article>
+
+          <article class="panel">
+            <h2>Warnings</h2>
+            <ul id="warnings-list" class="warning-list"></ul>
+          </article>
+
+          <article class="panel">
+            <h2>Generated SQL</h2>
+            <pre id="generated-sql"></pre>
+          </article>
+
+          <article class="panel">
+            <h2>LLM Reasoning</h2>
+            <pre id="llm-parsed"></pre>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("analysis-form");
+      const statusText = document.getElementById("status-text");
+      const errorPanel = document.getElementById("error-panel");
+      const errorOutput = document.getElementById("error-output");
+      const resultsPanel = document.getElementById("results-panel");
+
+      function formatPercent(value) {
+        return `${(value * 100).toFixed(2)}%`;
+      }
+
+      function setHidden(element, hidden) {
+        element.classList.toggle("hidden", hidden);
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        statusText.textContent = "Running analysis...";
+        setHidden(errorPanel, true);
+        setHidden(resultsPanel, true);
+
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+
+        try {
+          const response = await fetch("/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await response.json();
+
+          if (!response.ok || !data.ok) {
+            errorOutput.textContent = `${data.error || "Unknown error"}\n\n${data.traceback || ""}`;
+            setHidden(errorPanel, false);
+            statusText.textContent = "Analysis failed.";
+            return;
+          }
+
+          const best = data.analysis.best_candidate;
+          document.getElementById("best-key").textContent = best ? best.key : "None";
+          document.getElementById("left-rate").textContent = best ? formatPercent(best.left_match_rate) : "-";
+          document.getElementById("right-rate").textContent = best ? formatPercent(best.right_match_rate) : "-";
+          document.getElementById("matched-distinct").textContent = best ? String(best.matched_distinct_values) : "-";
+          document.getElementById("db-path").textContent = data.db_path;
+          document.getElementById("tables-analyzed").textContent = `${data.analysis.left_table} <-> ${data.analysis.right_table}`;
+          document.getElementById("candidate-keys").textContent = data.analysis.candidate_keys.join(", ") || "None";
+          document.getElementById("intermediate-counts").textContent = best
+            ? `left_total=${best.left_profile.total_rows}, right_total=${best.right_profile.total_rows}, matched_left=${best.matched_left_rows}, matched_right=${best.matched_right_rows}, matched_distinct=${best.matched_distinct_values}`
+            : "No counts available";
+          document.getElementById("generated-sql").textContent = best ? best.join_sql : "No SQL generated";
+          document.getElementById("llm-parsed").textContent = data.llm_result.parsed;
+          const warningsList = document.getElementById("warnings-list");
+          warningsList.innerHTML = "";
+          const warnings = best && best.warnings.length ? best.warnings : ["No warnings detected."];
+          for (const warning of warnings) {
+            const item = document.createElement("li");
+            item.textContent = warning;
+            warningsList.appendChild(item);
+          }
+
+          setHidden(resultsPanel, false);
+          statusText.textContent = "Analysis complete.";
+        } catch (error) {
+          errorOutput.textContent = String(error);
+          setHidden(errorPanel, false);
+          statusText.textContent = "Network error while calling local app.";
+        }
+      });
+    </script>
+  </body>
+</html>
